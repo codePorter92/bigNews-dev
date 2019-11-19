@@ -87,6 +87,15 @@
 
                 }
             });
+            // 点击退出时的思路
+            // 1.退出时，删除令牌，防止外人利用地址栏的地址重新登录自己的后台网页
+            // 2.返回登陆版面
+            // 3.提示用户是否保存修改资料
+            // 4.保存用户的修改，添加资料，并退出
+            $('.logout').on('click', function () {
+                window.localStorage.removeItem('token');
+                window.location.href = './login.html'
+            })
         });
     </script>
 </body>
