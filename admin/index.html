@@ -62,7 +62,8 @@
         <!-- 右侧主体内容 -->
         <div class="main" id="main_body"></div>
     </div>
-
+    <!-- 引进user.js的地址封装文件 -->
+    <script src='./libs/http.js'></script>
     <script>
         $(function () {
             // 逻辑思路
@@ -72,13 +73,14 @@
             // 4.由于每个页面都要出示令牌。所以我们直接封装在jQuery的文件上
             $.ajax({
                 type: "get",
-                url: "http://localhost:8080/api/v1/admin/user/info",
+                // 使用了地址封装函数
+                url: window.url.user_info,
                 // 设置请求头，由于token存在全局变量，所以不需要写
                 // headers: {
                 //     Authorization: window.localStorage.getItem('token')
                 // },
                 success: function (res) {
-                    console.log(res);
+                    // console.log(res);
                     $('.user_info>img').attr('src', res.data.userPic)
                     $('.user_info>span').html(res.data.nickname)
                     $('.user_center_link>img').attr('src', res.data.userPic)
