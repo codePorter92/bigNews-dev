@@ -127,7 +127,8 @@
                             $.get({
                                 url: window.url.user_info,
                                 success: function (res) {
-                                    console.log(res)
+                                    // console.log(res)
+                                    // 子页引进父页的数据时，添加parent在前头
                                     parent.$('.user_info>img').attr('src', res.data.userPic)
                                     parent.$('.user_info>span').html(res.data.nickname)
                                     parent.$('.user_center_link>img').attr('src', res.data.userPic);
