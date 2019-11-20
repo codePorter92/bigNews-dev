@@ -44,7 +44,7 @@
                     <label for="inputPassword3" class="col-sm-2 control-label">用户图标：</label>
                     <div class="col-sm-10">
                         <img src="images/2.jpg" alt="" class="user_pic">
-                        <input style="display: block" name="userPic" type="file" id="exampleInputFile">
+                        <input style="display: none" name="userPic" type="file" id="exampleInputFile">
                         <!-- 给label标签的for属性赋值,值是input标签的id,那这样的话点击label就相当于点击了input -->
                         <br>
                         <label for="exampleInputFile">
@@ -76,7 +76,7 @@
 
         // 逻辑思路
         // 1.当进入该页面的时候信息更新到用户信息
-
+        // 2.对图片进行的本地预览
         $(function () {
             $.get({
                 url: window.url.user_detail,
@@ -87,10 +87,62 @@
                         for (let key in userdata) {
                             $('input.' + key).val(userdata[key])
                         }
+                        $('.user_pic').attr('src', userdata.userPic)
                     }
                 }
             })
+            // 进行图片的本地预览处理
+            $('#exampleInputFile').on('change', function () {
+                let img = this.files[0];
+                let url = URL.createObjectURL(img)
+                // 本地预览图片
+                $('.user_pic').attr('src', url)
+            })
 
+            // 编辑用户数据
+            // 思路：1.编辑表单信息，
+            // 2.把表单信息进行二进制转变
+            // 3.点击修改按钮，进行Ajax请求
+
+
+
+            $('.btn-edit').on('click', function (e) {
+                let form = $('#form')[0]
+                let data = new FormData(form)
+                // 取消submit的默认行为
+                e.preventDefault();
+                // 发起Ajax请求
+                // debugger;
+                $.post({
+                    url: window.url.user_edit,
+                    data: data,
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        // console.log(res)
+                        if (res.code === 200) {
+                            // 修改成功之后
+                            // 1.本地页面进行刷新
+                            // 2.index页面进行Ajax请求，进行数据更新
+                            $.get({
+                                url: window.url.user_info,
+                                success: function (res) {
+                                    console.log(res)
+                                    parent.$('.user_info>img').attr('src', res.data.userPic)
+                                    parent.$('.user_info>span').html(res.data.nickname)
+                                    parent.$('.user_center_link>img').attr('src', res.data.userPic);
+                                    // 子页刷新一下
+                                    window.location.reload()
+                                }
+                            })
+                            // 用户跟密码更新完毕后退出重登
+                            // window.location.href = './login.html';
+                            // localStorage.removeItem('token')
+                        }
+
+                    }
+                })
+            })
         })
     </script>
 </body>
