@@ -63,6 +63,8 @@
                 </div>
                 <div class="modal-body">
                     <form>
+                        <!-- 设置一个隐藏域，用来储存编辑按钮请求回来的数据 -->
+                        <input type="hidden" name="" id="cateId">
                         <div class="form-group">
                             <label for="recipient-name" class="control-label">文章分类名称</label>
                             <input type="text" class="form-control" id="recipient-name">
@@ -74,7 +76,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal" id="close">关闭</button>
                     <button type="button" class="btn btn-primary" id="upload">Send message</button>
                 </div>
             </div>
@@ -90,8 +92,8 @@
             <td>{{$value.slug}}</td>
             <td class="text-center">
                 <a href="javascript:void(0)" data-id="{{$value.id}}" data-toggle="modal" class=" btn btn-info btn-xs"
-                data-target="#myModal">编辑</a>
-                <a href="javascript:void(0)" class="btn btn-danger btn-xs">删除</a>
+                data-target="#myModal" id="edit">编辑</a>
+                <a href="javascript:void(0)" class="btn btn-danger btn-xs " data-id="{{$value.id}}" >删除</a>
             </td>
     </tr>
     {{/each}}
@@ -107,8 +109,10 @@
         // 7.点击新增分类的模态框是在服务器中加入新加的项，并且返回来到列表中
         // 1）.先取参数值
         // 2）.发起Ajax请求
+        // 3）.每次按新增内容的时候，模态框要重置，(.reset()是原生方法)
         // 8.点击编辑是在原有的数据上进行改动，储存到数据库上，并返回到列表中
         // 9.给<h4>的标题标签改了id值为title , 给send message 的按钮添加了id=upload
+        // 10.点击删除文章类别，使用事件委派
         $(function () {
             asking()
             function asking() {
@@ -122,23 +126,63 @@
                     }
                 })
             }
-
+            // 点击删除文章类别
+            $('tbody').on('click', '.btn-danger', function (e) {
+                // e.preventDefault();
+                if (confirm('你确定要删除内容')) {
+                    let id = $(this).attr('data-id')
+                    $.post({
+                        url: window.url.category_delete,
+                        data: {
+                            id: id
+                        },
+                        success: function (res) {
+                            // console.log(res)
+                            if (res.code === 204) {
+                                asking()
+                            }
+                        }
+                    })
+                }
+            })
             // 当模态框显示事件发生之后
             $('#myModal').on('show.bs.modal', function (e) {
                 if (e.relatedTarget === $('#xinzengfenlei')[0]) {
                     $('#title').text('新增文章分类');
                     $('#upload').text('新增').addClass('btn-success').removeClass('btn-primary');
-
+                    // 新增按钮点击后出现的模态框重置（内容清空）
+                    $('.modal-body form')[0].reset()
                 } else {
                     // 编辑按钮
                     $('#title').text('编辑文章分类')
                     $('#upload').text('编辑').addClass('btn-primary').removeClass('btn-success')
+                    // 编辑的内容渲染到模态框
+                    let id = $(e.relatedTarget).attr('data-id');
+                    // console.log(id)
+                    $.get({
+                        url: window.url.category_search,
+                        data: {
+                            id: id
+                        },
+                        success: function (res) {
+                            // console.log(res);
+                            if (res.code === 200) {
+                                $('#recipient-name').val(res.data[0].name);
+                                $('#message-text').val(res.data[0].slug);
+                                $('#cateId').val(res.data[0].id)
+                            }
+                        }
+                    })
                 }
+
+
+
 
                 // 给新编和编辑的按钮注册事件
                 $('#upload').on('click', function () {
                     let name = $('#recipient-name').val();
                     let slug = $('#message-text').val();
+                    let id = $('#cateId').val()
                     // 新编内容
                     if ($(this).hasClass('btn-success')) {
                         $.post({
@@ -154,7 +198,19 @@
                             }
                         })
                     } else {
-
+                        $.post({
+                            url: window.url.category_edit,
+                            data: {
+                                id: id,
+                                name: name,
+                                slug: slug
+                            },
+                            success: function (res) {
+                                if (res.code === 200) {
+                                    asking()
+                                }
+                            }
+                        })
                     }
                 })
             })

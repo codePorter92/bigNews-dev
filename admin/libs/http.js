@@ -18,7 +18,7 @@
     // 根据id查询指定文章类别
     category_search: ser_addr + "/admin/category/search",
     // 编辑文章类别
-    categoty_edit: ser_addr + "/admin/categoty/edit",
+    category_edit: ser_addr + "/admin/category/edit",
     // 删除文章类别
     category_delete: ser_addr + "/admin/category/delete",
     // 文章搜索
