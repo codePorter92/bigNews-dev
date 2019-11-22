@@ -13,6 +13,9 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
+    <!-- 给页面导航栏引进文件 -->
+    <script src='./libs/bootstrap/js/bootstrap.min.js'></script>
+    <script src='./libs/jquery.twbsPagination.js'></script>
 </head>
 
 <body>
@@ -71,6 +74,8 @@
             <div class="row text-center">
             </div>
         </div>
+        <!-- 引进页面导航栏的html -->
+        <ul id="pagination-demo" class="pagination-sm"></ul>
     </div>
     <script src='./libs/http.js'></script>
     <!-- 引入下拉菜单的模板引擎 -->
@@ -118,7 +123,7 @@
             // 设置文章请求要求的参数
             let page = 1;
             let perpage = 6;
-            // 一进该网页时，发送ajax请求
+            // 一进该网页时，文章发送ajax请求
             $.get({
                 url: window.url.article_query,
                 data: {
@@ -131,25 +136,67 @@
                     // console.log(res)
                     if (res.code === 200) {
                         let temp = template('article', res);
-                        $('tbody').html(temp)
+                        $('tbody').html(temp);
+                        $('#pagination-demo').twbsPagination({
+                            totalPages: res.data.totalPage,
+                            visiblePages: 7,
+                            onPageClick: function (event, page) {
+                                // 这个回调函数的page是点击某个页面的页数来的
+                                page = page;
+                                $.get({
+                                    url: window.url.article_query,
+                                    data: {
+                                        type: $('#selCategory').val(),
+                                        state: $('#selStatus').val(),
+                                        page: page,
+                                        perpage: perpage
+                                    },
+                                    success: function (res) {
+                                        if (res.code === 200) {
+                                            let temp = template('article', res);
+                                            $('tbody').html(temp);
+                                        }
+
+                                    }
+                                })
+                            }
+                        });
                     }
                 }
             })
             // 删除文章
-            // $('tbody').on('click', '.delete', function () {
-            //     if (confirm('亲，确定要删除吗？')) {
-            //         let id = $(this).attr('data-id')
-            //         $.post({
-            //             url: window.url.article_delete,
-            //             data: {
-            //                 id: id
-            //             },
-            //             success: function (res) {
-
-            //             }
-            //         })
-            //     }
-            // })
+            $('tbody').on('click', '.delete', function () {
+                if (confirm('亲，确定要删除吗？')) {
+                    let id = $(this).attr('data-id')
+                    console.log(id);
+                    $.post({
+                        url: window.url.article_delete,
+                        data: {
+                            id: id
+                        },
+                        success: function (res) {
+                            console.log(res)
+                            $.get({
+                                url: window.url.article_query,
+                                data: {
+                                    type: $('#selCategory').val(),
+                                    state: $('#selStatus').val(),
+                                    page: page,
+                                    perpage: perpage
+                                },
+                                success: function (res) {
+                                    console.log(res)
+                                    if (res.code === 200) {
+                                        let temp = template('article', res);
+                                        $('tbody').html(temp);
+                                        $('#pagination-demo').twbsPagination('changeTotalPages', res.data.totalPage, 1)
+                                    }
+                                }
+                            })
+                        }
+                    })
+                }
+            })
             // 点击筛选按钮时发送ajax请求
             $('#btnSearch').on('click', function (e) {
                 // 去除submit的默认行为
@@ -163,14 +210,15 @@
                         perpage: perpage
                     },
                     success: function (res) {
-                        console.log(res)
-                        if (res.code === 200) {
+                        // console.log(res)
+                        if (res.code === 200 && res.data.data.length !== 0) {
                             let temp = template('article', res);
                             $('tbody').html(temp)
-
-                            if (res.data.data.length === 0) {
-                                $('tbody').html('<tr><td style="text-align:center; font-size:20px;" colspan=6>亲，没有数据了！！</td></tr>')
-                            }
+                            $('#pagination-demo').show();
+                            $('#pagination-demo').twbsPagination('changeTotalPages', res.data.totalPage, 1)
+                        } else {
+                            $('#pagination-demo').hide();
+                            $('tbody').html('<tr><td style="text-align:center; font-size:20px;" colspan=6>亲，没有数据了！！</td></tr>')
                         }
                     }
                 })
