@@ -107,7 +107,8 @@
         // 2.点击筛选的按钮时。会出现对应文章类型的文章，根据ajax请求得到的数据，渲染页面，编辑按钮和删除按钮要加id,以备后面的编辑和删除作操作
         // 3.当文章类型没有数据时，要提醒用户
         // 4.删除文章时，使用事件委派，并要对用户做出提醒
-        // 5.引进页面导航插件
+        // 5.引进页面导航插件,
+        // 6.未完成的，删除页面时侯页面停留在原地方
         $(function () {
             // 下拉菜单中所有分类的请求
             $.get({
@@ -175,24 +176,25 @@
                             id: id
                         },
                         success: function (res) {
-                            console.log(res)
-                            $.get({
-                                url: window.url.article_query,
-                                data: {
-                                    type: $('#selCategory').val(),
-                                    state: $('#selStatus').val(),
-                                    page: page,
-                                    perpage: perpage
-                                },
-                                success: function (res) {
-                                    console.log(res)
-                                    if (res.code === 200) {
-                                        let temp = template('article', res);
-                                        $('tbody').html(temp);
-                                        $('#pagination-demo').twbsPagination('changeTotalPages', res.data.totalPage, 1)
+                            if (res.code === 204) {
+                                $.get({
+                                    url: window.url.article_query,
+                                    data: {
+                                        type: $('#selCategory').val(),
+                                        state: $('#selStatus').val(),
+                                        page: page,
+                                        perpage: perpage
+                                    },
+                                    success: function (res) {
+                                        console.log(res)
+                                        if (res.code === 200) {
+                                            let temp = template('article', res);
+                                            $('tbody').html(temp);
+                                            $('#pagination-demo').twbsPagination('changeTotalPages', res.data.totalPage, 1)
+                                        }
                                     }
-                                }
-                            })
+                                })
+                            }
                         }
                     })
                 }
