@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="css/main.css">
   <script src="./libs/jquery-1.12.4.min.js"></script>
   <script src="./libs/template-web.js"></script>
+  <!-- 引进pagination插件 -->
+  <script src="./libs/jquery.twbsPagination.js"></script>
 </head>
 
 <body>
@@ -32,7 +34,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <!-- <tr>
             <td>小周</td>
             <td>这是一条测试评论，欢迎光临</td>
             <td>《世界，你好》</td>
@@ -138,11 +140,12 @@
               <a href="javascript:editTr( 'rejected',11 );" class="btn btn-warning btn-xs">拒绝</a>
               <a href="javascript:editTr( 'trashed',11 );" class="btn btn-danger btn-xs">删除</a>
             </td>
-          </tr>
+          </tr> -->
         </tbody>
       </table>
+
       <div class="row text-center">
-        <ul class="pagination pagination-sm">
+        <!-- <ul class="pagination pagination-sm">
           <li class="page-item first disabled"><a href="#" class="page-link">首页</a></li>
           <li class="page-item prev disabled"><a href="#" class="page-link">上一页</a></li>
           <li class="page-item active"><a href="#" class="page-link">1</a></li>
@@ -154,10 +157,176 @@
           <li class="page-item"><a href="#" class="page-link">7</a></li>
           <li class="page-item next"><a href="#" class="page-link">下一页</a></li>
           <li class="page-item last"><a href="#" class="page-link">尾页</a></li>
-        </ul>
+        </ul> -->
+        <!-- 分页器插件 -->
         <ul id="pagination" class="pagination-sm"></ul>
       </div>
+      <script src="./libs/http.js"></script>
+      <!-- 引进模板引擎 -->
+      <script type="text/html" id="commentList">
+        {{each data.data as v index}}
+        {{if v.state==="待审核"}}
+         <tr class="danger">
+         {{else}}
+         <tr>
+         {{/if}}
+            <td>{{v.author}}</td>
+            <td>{{v.content}}</td>
+            <td>{{v.title}}</td>
+            <td>{{v.date}} {{v.time}}</td>
+            <td>{{v.state}}</td>
+            <td class="text-center">
+              {{if v.state==="已通过"}}
+              <a href="javascript:void(0);;" class="btn btn-primary btn-xs"
+              data-id="{{v.id}}" id="refuse">拒绝</a>
+              {{else if v.state==="待审核"}}
+              <a href="javascript:void(0);;" class="btn btn-warning btn-xs"
+              data-id="{{v.id}}" id="pass">批准</a>
+              {{else if v.state==="已拒绝"}}
+              <a href="javascript:void(0);;" class="btn btn-warning btn-xs"
+              data-id="{{v.id}}" id="pass">通过</a>
+              {{/if}}
+              <a href="javascript:void(0);;" class="btn btn-danger btn-xs"
+              data-id="{{v.id}}" id="delete">删除</a>
+            </td>
+          </tr>
+        {{/each}}
+      </script>
+      <script>
+        // 思路：1进入该网页，进行Ajax请求，使用模板引擎,渲染文章
+        // 2.引入pagination插件,进行页面和评论的切换是同步的
+        // 3.在模板引擎中,要做评论区的判断;当状态为"待审核时",背景颜色带粉红色,在评论中,当状态为"待审核",改为批准;当状态为""已通过",改为拒绝;当状态为""拒绝",改为通过
+        // 4.删除评论时,发起请求,删除内容,并根据页面的情况重新分配页面数
+        $(function () {
 
+          // 进入页面时发起ajax评论请求
+          let myPage = 1;
+          let perpage = 10;
+          $.get({
+            url: window.url.comment_search,
+            data: {
+              page: myPage,
+              perpage: perpage,
+            },
+            success: function (res) {
+              // console.log(res)
+              if (res.code === 200) {
+                let temp = template('commentList', res)
+                $('tbody').html(temp)
+                $('#pagination').twbsPagination({
+                  totalPages: res.data.totalPage,
+                  visiblePages: 7,
+                  onPageClick: function (event, page) {
+                    myPage = page
+                    $.get({
+                      url: window.url.comment_search,
+                      data: {
+                        page: myPage,
+                        perpage: perpage,
+                      },
+                      success: function (res) {
+                        if (res.code === 200) {
+                          let temp = template('commentList', res)
+                          $('tbody').html(temp)
+                        }
+                      }
+                    })
+                  }
+                });
+              }
+            }
+          })
+
+          // 给评论的拒绝按钮安装事件
+          $('tbody').on('click', '#refuse', function () {
+            let id = $(this).attr("data-id")
+            $.post({
+              url: window.url.comment_reject,
+              data: {
+                id: id
+              },
+              success: function (res) {
+                // console.log(res)
+                if (res.code === 200) {
+                  $.get({
+                    url: window.url.comment_search,
+                    data: {
+                      page: myPage,
+                      perpage: perpage,
+                    },
+                    success: function (res) {
+                      if (res.code === 200) {
+                        let temp = template('commentList', res)
+                        $('tbody').html(temp)
+                      }
+                    }
+                  })
+                }
+              }
+            })
+          })
+
+          // 给评论中的批准/通过按钮安装事件
+          $('tbody').on('click', '#pass', function () {
+            let id = $(this).attr('data-id')
+            $.post({
+              url: window.url.comment_pass,
+              data: {
+                id: id
+              },
+              success: function (res) {
+                if (res.code === 200) {
+                  $.get({
+                    url: window.url.comment_search,
+                    data: {
+                      page: myPage,
+                      perpage: perpage,
+                    },
+                    success: function (res) {
+                      if (res.code === 200) {
+                        let temp = template('commentList', res)
+                        $('tbody').html(temp)
+                      }
+                    }
+                  })
+                }
+              }
+            })
+          })
+          // 给删除键安装事件委派
+          $('tbody').on('click', '#delete', function () {
+            let id = $(this).attr('data-id');
+            if (confirm('亲,确定要删除该评论吗?')) {
+              $.post({
+                url: window.url.comment_delete,
+                data: {
+                  id: id
+                },
+                success: function (res) {
+                  console.log(res)
+                  if (res.code === 200) {
+                    $.get({
+                      url: window.url.comment_search,
+                      data: {
+                        page: myPage,
+                        perpage: perpage,
+                      },
+                      success: function (res) {
+                        if (res.code === 200) {
+                          let temp = template('commentList', res)
+                          $('tbody').html(temp)
+                          $('#pagination').twbsPagination('changeTotalPages', res.totalPage, 1)
+                        }
+                      }
+                    })
+                  }
+                }
+              })
+            }
+          })
+        })
+
+      </script>
     </div>
   </div>
 </body>

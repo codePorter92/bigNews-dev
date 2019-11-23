@@ -44,7 +44,9 @@
     // 评论审核通过
     comment_pass: ser_addr + "/admin/comment/pass",
     // 评论审核不通过
-    comment_reject: ser_addr + "/admin/comment/reject"
+    comment_reject: ser_addr + "/admin/comment/reject",
+    // 删除评论
+    comment_delete: ser_addr + "/admin/comment/delete"
   };
   w.url = url;
 })(window);
