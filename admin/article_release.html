@@ -19,6 +19,8 @@
     <script src="./libs/template-web.js"></script>
     <!-- 插入日期插件js -->
     <script src='./libs/jedate/js/jedate.js'></script>
+    <!-- 插入wangEdit插件 -->
+    <script src="./libs/wangEditor.js"></script>
 </head>
 
 <body>
@@ -45,45 +47,136 @@
                     <label for="inputCategory" class="col-sm-2 control-label">文章类别：</label>
                     <div class="col-sm-4">
                         <select class="form-control category" name="categoryId">
-                            <option>类别一</option>
+                            <!-- <option>类别一</option>
                             <option>类别二</option>
                             <option>类别三</option>
                             <option selected>类别四</option>
-                            <option>类别五</option>
+                            <option>类别五</option> -->
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">发布时间：</label>
                     <div class="jeinpbox col-sm-2">
-                        <input type="text" class="jeinput" id="testico" placeholder="YYYY-MM-DD">
+                        <input type="text" class="jeinput" id="testico" name="date" placeholder="YYYY-MM-DD">
                         <div class="icons jebtns" onclick="jeDate('#testico',{trigger:false,format: 'YYYY-MM-DD'})">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputEmail3" class="col-sm-2 control-label">文章内容：</label>
-                    <div class="col-sm-10">
+                    <div id="editor" class="col-sm-9" name="content">
+                        <p>欢迎使用 <b>wangEditor</b> 富文本编辑器</p>
                     </div>
                 </div>
                 <div class="form-group">
                     <div class="col-sm-offset-2 col-sm-10">
-                        <button type="submit" class="btn btn-success btn-release">发布</button>
-                        <button type="submit" class="btn btn-default btn-draft">存为草稿</button>
+                        <button type="submit" class="btn btn-success btn-release" id="transmit">发布</button>
+                        <button type="submit" class="btn btn-default btn-draft" id="draft">存为草稿</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
     <script src="./libs/http.js"></script>
+    <!-- 引进模板引擎 -->
+    <script type="text/html" id="categoryList">
+        {{each data}}
+        <option value="{{$value.id}}">{{$value.name}}</option>
+        {{/each}}
+    </script>
     <script>
-
+        // 思路
+        // 1.进入该页面时，标题和按钮的文字要变化
+        // 2.对文章类型发起ajax请求，并在模板引擎中渲染，加入文章类型的id值
+        // 3.本地图片预览存储
+        // 4.在发布按钮中添加ajax请求，上传文件，返回上一个页面
         $(function () {
             // 引进日期的插件
             jeDate("#testico", {
                 format: "YYYY-MM-DD",
                 isTime: false,
                 zIndex: 99999,
+            })
+
+
+            // 引进wangEdit的使用方法
+            var E = window.wangEditor
+            var editor = new E('#editor')
+            editor.create()
+
+            // 标题改变
+            $('.common_title').text('文章发布')
+
+            // 对文章类型发起Ajax请求，渲染页面
+            $.get({
+                url: window.url.category_list,
+                success: function (res) {
+                    // console.log(res);
+                    if (res.code === 200) {
+                        let temp = template('categoryList', res);
+                        $('.category').html(temp)
+                    }
+                }
+            })
+
+            // 图片本地预览
+            $('#inputCover').on('change', function (e) {
+                // 阻止input['type=file']的默认行为,默认刷新
+                e.preventDefault();
+                // console.dir(this)
+                let url = this.files[0]
+                url = URL.createObjectURL(url)
+                // console.log(url)
+                $('.article_cover').attr('src', url)
+            })
+
+            // 发布文章请求
+            $('#transmit').on('click', function (e) {
+                // 阻止默认事件发生
+                e.preventDefault();
+                // 提取表单数据，记得给表单的每一项添加一个name的属性值
+                let form = $('#form')[0];
+                let data = new FormData(form);
+                data.append('content', editor.txt.text());
+                data.append('state', '已发布');
+                $.post({
+                    url: window.url.article_publish,
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        // console.log(res)
+                        if (res.code === 200) {
+                            alert('文章发表成功')
+                            window.history.back()
+                        }
+                    }
+                })
+            })
+
+            // 存为草稿请求
+            $('#draft').on('click', function (e) {
+                // 阻止默认事件发生
+                e.preventDefault();
+                // 提取表单数据，记得给表单的每一项添加一个name的属性值
+                let form = $('#form')[0];
+                let data = new FormData(form);
+                data.append('content', editor.txt.text());
+                data.append('state', '已发布');
+                $.post({
+                    url: window.url.article_publish,
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        // console.log(res)
+                        if (res.code === 200) {
+                            alert('已存入草稿箱')
+                            window.history.back()
+                        }
+                    }
+                })
             })
         })
 
