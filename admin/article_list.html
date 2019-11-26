@@ -174,7 +174,7 @@
             $('tbody').on('click', '.delete', function () {
                 if (confirm('亲，确定要删除吗？')) {
                     let id = $(this).attr('data-id')
-                    console.log(id);
+                    // console.log(id);
                     $.post({
                         url: window.url.article_delete,
                         data: {
